@@ -5,7 +5,7 @@ Watches a directory recursively for new files and download .srt for those newly 
 https://github.com/yhling/Sub-autodownloader/assets/9102395/736180ed-5da2-48ac-b866-fc1488a4b760
 
 # Binaries
-Currently only Windows binary is available. See Releases.
+Currently only Windows binary is available. See [Releases](https://github.com/yhling/Sub-autodownloader/releases).
 
 # Usage
 On first run, it will prompt for opensubtitles username, password and consumer key. A consumer key can be generated at https://www.opensubtitles.com/en/consumers. You need an opensubtitles account.
