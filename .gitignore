@@ -1,0 +1,6 @@
+*.onefile-build
+*.dist
+*.build
+env
+*.json
+*.exe
