@@ -3,7 +3,8 @@ from watchdog.observers import Observer
 from watchdog.events import PatternMatchingEventHandler
 import os.path as op
 import PTN
-from opensubtitlescom import OpenSubtitles
+import json
+from opensubtitles_api import OpenSubtitlesAPI
 
 class generic_config:
     def __init__(self, **kwargs):
@@ -30,38 +31,6 @@ class generic_config:
         with open('subconfig.json', 'w') as f:
             json.dump(self.configItems.__dict__, f)
 
-class opensub:
-    def __init__(self, userName=None, password=None, apiKey=None, appName="Hoe") -> None:
-        # Initialize the OpenSubtitles client
-        self.subtitles = OpenSubtitles(apiKey, appName)
-
-        # Log in (retrieve auth token)
-        response = self.subtitles.login(userName, password)
-
-    def download(self, filePath):
-        mediaName = op.splitext(op.basename(filePath))[0]
-        mediaDir = op.dirname(filePath)
-        # Extract movie info from filename, if nothing found then extract from directory
-        a = PTN.parse(mediaName)
-        if 'year' not in a:
-            dirName = op.basename(mediaDir)
-            a = PTN.parse(dirName)
-        if 'year' not in a:
-            print("No info could be extracted from file or directory name.")
-            return
-        if op.exists(op.join(mediaDir, f"{mediaName}.srt")):
-            print("Sub already exists for this file.")
-            return
-        # Search for subtitles
-        print(f"Searching subtitle with title '{a['title']}' of year '{a['year']}'")
-        response = self.subtitles.search(query=f"{a['title']}",  year=a["year"], type="movie", languages="en")
-        self.change_download_dir(mediaDir)
-        print(f"Downloading sub for '{filePath}'")
-        self.subtitles.download_and_save(response.data[0], filename=f"{mediaName}.srt")
-        print(f"Downloaded subtitle: '{mediaName}.srt'")
-
-    def change_download_dir(self, dirPath):
-        self.subtitles.downloads_dir = dirPath
 
 config = generic_config(osub_user=None, osub_pass=None, osub_key=None, watch_pattern=["*.mkv", "*.mp4"])
 
@@ -71,7 +40,7 @@ if config.osub_user == None:
     config.osub_key = input("OpenSubtitles API key (https://www.opensubtitles.com/en/consumers): ")
     config.commit()
 
-subs = opensub(userName=config.osub_user, password=config.osub_pass, apiKey=config.osub_key)
+subs = OpenSubtitlesAPI(userName=config.osub_user, password=config.osub_pass, apiKey=config.osub_key)
 
 patterns = config.watch_pattern
 ignore_patterns = ["*.srt"]
@@ -83,7 +52,7 @@ my_event_handler = PatternMatchingEventHandler(patterns, ignore_patterns, ignore
 def on_created(event):
     print(f"New file detected at '{event.src_path}'")
     try:  
-        subs.download(event.src_path)
+        subs.download_subtitle(event.src_path)
     except Exception as e:
         print(e)
 
