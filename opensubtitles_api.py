@@ -34,14 +34,13 @@ class OpenSubtitlesAPI:
             
             result = response.json()
             self.token = result.get("token")
-            self.base_url = result.get("base_url", self.base_url)
             print("Successfully authenticated with OpenSubtitles API")
             return result
         except requests.exceptions.RequestException as e:
             print(f"Authentication failed: {e}")
             raise
 
-    def search(self, query, year=None, languages="en"):
+    def search(self, query, year=None, release=None, languages="en"):
         """Search for subtitles"""
         if not self.token:
             raise Exception("Not authenticated. Please login first.")
@@ -54,13 +53,15 @@ class OpenSubtitlesAPI:
         }
         
         params = {
-            "query": query,
             "languages": languages
         }
         
         if year:
             params["year"] = year
-            
+        if release and release != "":
+            params["query"] = f"{query} {release}"
+        else:
+            params["query"] = query
         try:
             response = requests.get(url, headers=headers, params=params)
             response.raise_for_status()
@@ -69,6 +70,7 @@ class OpenSubtitlesAPI:
             return result
         except requests.exceptions.RequestException as e:
             print(f"Search failed: {e}")
+            print(f"Response: {response.text}")
             raise
 
     def download(self, file_id, filename):
@@ -123,20 +125,22 @@ class OpenSubtitlesAPI:
         mediaDir = op.dirname(filePath)
         
         # Extract movie info from filename, if nothing found then extract from directory
-        a = PTN.parse(mediaName)
+        a = PTN.parse(mediaName, standardise=False)
         if 'year' not in a:
             dirName = op.basename(mediaDir)
             a = PTN.parse(dirName)
         if 'year' not in a:
-            print("No info could be extracted from file or directory name.")
-            return
+            print("Year of release could not be determined from file or directory name.")
+            a['year'] = None
+        if 'quality' not in a:
+            a['quality'] = None
         if op.exists(op.join(mediaDir, f"{mediaName}.srt")):
             print("Sub already exists for this file.")
             return
             
         # Search for subtitles
-        print(f"Searching subtitle with title '{a['title']}' of year '{a['year']}'")
-        search_result = self.search(query=a['title'], year=a['year'], languages="en")
+        print(f"Searching subtitle with title '{a['title']}' of year '{a['year']}' of release 'a['quality']'")
+        search_result = self.search(query=a['title'], year=a['year'], release=a['quality'], languages="en")
         
         if not search_result.get('data') or len(search_result['data']) == 0:
             print("No subtitles found.")
@@ -148,6 +152,7 @@ class OpenSubtitlesAPI:
         # Download the first result
         print(f"Downloading sub for '{filePath}'")
         subtitle_data = search_result['data'][0]
+        print(f"Subtitle release name: {subtitle_data['attributes']['release']}")
         file_id = subtitle_data['attributes']['files'][0]['file_id']
         
         self.download(file_id, f"{mediaName}.srt")

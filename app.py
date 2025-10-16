@@ -37,7 +37,7 @@ config = generic_config(osub_user=None, osub_pass=None, osub_key=None, watch_pat
 if config.osub_user == None:
     config.osub_user = input("OpenSubtitles username: ")
     config.osub_pass = input("OpenSubtitles password: ")
-    config.osub_key = input("OpenSubtitles API key (https://www.opensubtitles.com/en/consumers): ")
+    config.osub_key = input("OpenSubtitles API key (Create one at https://www.opensubtitles.com/en/consumers): ")
     config.commit()
 
 subs = OpenSubtitlesAPI(userName=config.osub_user, password=config.osub_pass, apiKey=config.osub_key)
